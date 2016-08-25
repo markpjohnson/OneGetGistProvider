@@ -1,5 +1,5 @@
 @{
-    ModuleVersion = '0.6'
+    ModuleVersion = '0.7'
     GUID = '23bbd6c6-a832-4ce0-974c-0c8266d5ccf0'
     Author = 'Doug Finke'
     CompanyName = 'Doug Finke'
