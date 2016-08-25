@@ -104,7 +104,8 @@ function Install-Package {
 	if (!(Test-Path $targetDir)) { md $targetDir | Out-Null }
 	
 	write-verbose "Package install location {0}" $targetDir
-	foreach ($file in (Invoke-RestMethod $rawUrl).files) {
+	$gist = (Invoke-RestMethod $rawUrl)
+	foreach ($file in ($gist.files | ConvertTo-HashTable)) {
 		#$url = Split-Path -Leaf $file.raw_url
 		$filename = $file.filename
 		$targetOut = "$($targetDir)\$($filename)"
