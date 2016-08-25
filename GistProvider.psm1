@@ -46,32 +46,32 @@ function Find-Package {
 
 	write-debug "In $($ProviderName)- Find-Package"
 	
-	ForEach($Name in @($request.PackageSources)) {
+	ForEach ($Name in @($request.PackageSources)) {
 	    
 	    write-debug "In $($ProviderName)- Find-Package for user {0}" $Name
 	    
-	    if($request.Credential) { $Header = (Get-GistAuthHeader $request.Credential) }
+	    if ($request.Credential) { $Header = (Get-GistAuthHeader $request.Credential) }
 	    
 	    #write-debug "In $($ProviderName)- Find-Package {0}" $(help New-SoftwareIdentity | out-string)
-	    ForEach($gist in (Invoke-RestMethod "https://api.github.com/users/$($Name)/gists" -Header $Header)) {
+	    ForEach ($gist in (Invoke-RestMethod "https://api.github.com/users/$($Name)/gists" -Header $Header)) {
 	    	
 	    	if($request.IsCancelled){break}
 	        
-	        $FileName = ($gist.files| Get-Member -MemberType NoteProperty).Name
+	        $gistName = $gist.description.ToString()
 	        
-	        write-debug "In $($ProviderName)- Find-Package found file {0}" $FileName
-	        $rawUrl = ($gist.files).($FileName).raw_url
+	        write-debug "In $($ProviderName)- Find-Package found Gist {0}" $gistName
+	        $gitUrl = $gist.git_pull_url
 	        
-	        if($rawUrl -And ($FileName -match $names)) {
+	        if ($rawUrl -And ($gistName -match $names)) {
 	            $SWID = @{
 	                version              = "1.0"
 	                versionScheme        = "semver"
-	                fastPackageReference = $rawUrl
-	                name                 = $FileName
+	                fastPackageReference = $gitUrl
+	                name                 = $gistName
 	                source               = "Gist/$($Name)"
 	                summary              = ($gist.description).tostring()
-	                searchKey            = $FileName.split('.')[0]
-	            }           
+	                searchKey            = $gistName
+	            }
 	            
 	            $SWID.fastPackageReference = $SWID | ConvertTo-JSON -Compress
 	            New-SoftwareIdentity @SWID
@@ -84,22 +84,24 @@ function Install-Package {
     param(
         [string] $fastPackageReference
     )   	
-    	$rawUrl = ($fastPackageReference|ConvertFrom-Json).fastpackagereference
+    
+    $swid = ($fastPackageReference | ConvertFrom-Json)
+    $rawUrl = $swid.fastpackagereference
 	
 	write-debug "In $($ProviderName) - Install-Package - {0}" $rawUrl
 	
 	if(!(Test-Path $GistPath)) { md $GistPath | Out-Null }	
 	
 	$psFileName = Split-Path -Leaf $rawUrl
+	$dirName = $swid.name
 	$targetOut = "$($GistPath)\$($psFileName)"
 
 	write-verbose "Package install location {0}" $targetOut
-	Invoke-RestMethod -Uri $rawUrl | 
-	    Set-Content -Encoding Ascii $targetOut
+	# Invoke-RestMethod -Uri $rawUrl | Set-Content -Encoding Ascii $targetOut
+	git clone $rawUrl $targetOut
 	
 	## Update the catalog of gists installed	
-	($fastPackageReference | ConvertFrom-Json) |
-	     Export-Csv -Path $CSVFilename -Append -NoTypeInformation -Encoding ASCII -Force
+	$swid | Export-Csv -Path $CSVFilename -Append -NoTypeInformation -Encoding ASCII -Force
 }
 
 function ConvertTo-HashTable {
