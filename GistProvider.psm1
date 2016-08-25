@@ -58,19 +58,22 @@ function Find-Package {
 	    	if($request.IsCancelled){break}
 	        
 	        $gistName = $gist.description.ToString()
+	        $files = $gist.files | ConvertTo-HashTable
+	        $rawUrl = $gist.git_pull_url
+	        if ($files.Count -eq 1) { $gistName = $files[0].filename }
 	        
 	        write-debug "In $($ProviderName)- Find-Package found Gist {0}" $gistName
-	        $gitUrl = $gist.git_pull_url
 	        
 	        if ($rawUrl -And ($gistName -match $names)) {
 	            $SWID = @{
 	                version              = "1.0"
 	                versionScheme        = "semver"
-	                fastPackageReference = $gitUrl
+	                fastPackageReference = $gist.id
 	                name                 = $gistName
 	                source               = "Gist/$($Name)"
 	                summary              = ($gist.description).tostring()
 	                searchKey            = $gistName
+	                files 				 = $files
 	            }
 	            
 	            $SWID.fastPackageReference = $SWID | ConvertTo-JSON -Compress
@@ -86,19 +89,24 @@ function Install-Package {
     )   	
     
     $swid = ($fastPackageReference | ConvertFrom-Json)
-    $rawUrl = $swid.fastpackagereference
+    $id = $swid.fastpackagereference
 	
-	write-debug "In $($ProviderName) - Install-Package - {0}" $rawUrl
+	write-debug "In $($ProviderName) - Install-Package - {0}" $id
 	
 	if(!(Test-Path $GistPath)) { md $GistPath | Out-Null }	
 	
-	$psFileName = Split-Path -Leaf $rawUrl
+	# $psFileName = Split-Path -Leaf $rawUrl
 	$dirName = $swid.name
-	$targetOut = "$($GistPath)\$($psFileName)"
+	$targetDir = "$($GistPath)\$($dirName)"
 
-	write-verbose "Package install location {0}" $targetOut
+	write-verbose "Package install location {0}" $targetDir
+	foreach ($file in $swid.files) {
+		$url = $file.raw_url
+		$targetOut = "$($targetDir)\$($url)"
+		Invoke-RestMethod -Uri $url | Set-Content -Encoding Ascii 
+	}
 	# Invoke-RestMethod -Uri $rawUrl | Set-Content -Encoding Ascii $targetOut
-	git clone $rawUrl $targetOut
+	# git clone $rawUrl $targetOut
 	
 	## Update the catalog of gists installed	
 	$swid | Export-Csv -Path $CSVFilename -Append -NoTypeInformation -Encoding ASCII -Force
