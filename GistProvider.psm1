@@ -60,7 +60,11 @@ function Find-Package {
 	        $gistName = $gist.description.ToString()
 	        $files = $gist.files | ConvertTo-HashTable
 	        $rawUrl = $gist.git_pull_url
-	        if ($files.Count -eq 1) { $gistName = $files[0].filename }
+	        $searchKey = $gistName
+	        if ($files.Count -eq 1) { 
+	        	$gistName = ($gist.files| Get-Member -MemberType NoteProperty).Name 
+	        	$searchKey = $gistName.split('.')[0]
+	        }
 	        
 	        write-debug "In $($ProviderName)- Find-Package found Gist {0}" $gistName
 	        
@@ -73,7 +77,7 @@ function Find-Package {
 	                source               = "Gist/$($Name)"
 	                summary              = ($gist.description).tostring()
 	                searchKey            = $gistName
-	                files 				 = $files
+	                files                = $gist.files
 	            }
 	            
 	            $SWID.fastPackageReference = $SWID | ConvertTo-JSON -Compress
@@ -100,10 +104,10 @@ function Install-Package {
 	$targetDir = "$($GistPath)\$($dirName)"
 
 	write-verbose "Package install location {0}" $targetDir
-	foreach ($file in $swid.files) {
-		$url = $file.raw_url
+	foreach ($file in ($swid.files | ConvertTo-HashTable)) {
+		$url = Split-Path -Leaf $file.raw_url
 		$targetOut = "$($targetDir)\$($url)"
-		Invoke-RestMethod -Uri $url | Set-Content -Encoding Ascii 
+		Invoke-RestMethod -Uri $file.raw_url | Set-Content -Encoding Ascii 
 	}
 	# Invoke-RestMethod -Uri $rawUrl | Set-Content -Encoding Ascii $targetOut
 	# git clone $rawUrl $targetOut
