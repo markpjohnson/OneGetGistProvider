@@ -96,11 +96,12 @@ function Install-Package {
 	
 	write-debug "In $($ProviderName) - Install-Package - {0}" $rawUrl
 	
-	if(!(Test-Path $GistPath)) { md $GistPath | Out-Null }	
+	if (!(Test-Path $GistPath)) { md $GistPath | Out-Null }	
 	
 	# $psFileName = Split-Path -Leaf $rawUrl
 	$dirName = $swid.name
 	$targetDir = "$($GistPath)\$($dirName)"
+	if (!(Test-Path $targetDir)) { md $targetDir | Out-Null }
 	
 	write-verbose "Package install location {0}" $targetDir
 	foreach ($file in (Invoke-RestMethod $rawUrl).files) {
