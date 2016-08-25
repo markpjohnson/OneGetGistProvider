@@ -104,9 +104,10 @@ function Install-Package {
 	
 	write-verbose "Package install location {0}" $targetDir
 	foreach ($file in (Invoke-RestMethod $rawUrl).files) {
-		$url = Split-Path -Leaf $file.raw_url
-		$targetOut = "$($targetDir)\$($url)"
-		Invoke-RestMethod -Uri $file.raw_url | Set-Content -Encoding Ascii 
+		#$url = Split-Path -Leaf $file.raw_url
+		$filename = $file.filename
+		$targetOut = "$($targetDir)\$($filename)"
+		$file.content | Set-Content -Encoding Ascii $targetOut
 	}
 	
 	## Update the catalog of gists installed	
