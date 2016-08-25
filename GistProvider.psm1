@@ -105,9 +105,10 @@ function Install-Package {
 	
 	write-verbose "Package install location {0}" $targetDir
 	$gist = (Invoke-RestMethod $rawUrl)
-	foreach ($file in ($gist.files | ConvertTo-HashTable)) {
+	$files = ($gist.files | ConvertTo-HashTable)
+	foreach ($filename in $files.Keys) {
 		#$url = Split-Path -Leaf $file.raw_url
-		$filename = $file.filename
+		$file = $files.$($filename)
 		$targetOut = "$($targetDir)\$($filename)"
 		$file.content | Set-Content -Encoding Ascii $targetOut
 	}
