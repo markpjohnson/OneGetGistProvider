@@ -11,8 +11,8 @@ function Get-GistAuthHeader {
     $authInfo = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($authInfo))
 
     @{
-        "Authorization" = "Basic " + $authInfo
-        "Content-Type" = "application/json"
+		"Authorization" = "Basic " + $authInfo
+		"Content-Type" = "application/json"
     }
 }
 
@@ -20,7 +20,6 @@ function Initialize-Provider     { write-debug "In $($Providername) - Initialize
 function Get-PackageProviderName { return $Providername }
 
 function Resolve-PackageSource { 
-
     write-debug "In $($ProviderName)- Resolve-PackageSources"    
     
     $IsTrusted    = $false
@@ -31,8 +30,8 @@ function Resolve-PackageSource {
     	$Location = "https://api.github.com/users/$($Name)/gists"
     	
     	write-debug "In $($ProviderName)- Resolve-PackageSources gist: {0}" $Location
-
-        New-PackageSource $Name $Location $IsTrusted $IsRegistered $IsValidated
+    	
+    	New-PackageSource $Name $Location $IsTrusted $IsRegistered $IsValidated
     }        
 }
 
@@ -47,15 +46,13 @@ function Find-Package {
 	write-debug "In $($ProviderName)- Find-Package"
 	
 	ForEach ($Name in @($request.PackageSources)) {
-	    
 	    write-debug "In $($ProviderName)- Find-Package for user {0}" $Name
 	    
 	    if ($request.Credential) { $Header = (Get-GistAuthHeader $request.Credential) }
 	    
 	    #write-debug "In $($ProviderName)- Find-Package {0}" $(help New-SoftwareIdentity | out-string)
 	    ForEach ($gist in (Invoke-RestMethod "https://api.github.com/users/$($Name)/gists" -Header $Header)) {
-	    	
-	    	if($request.IsCancelled){break}
+	    	if ($request.IsCancelled) { break }
 	        
 	        $gistName = $gist.description.ToString()
 	        $files = $gist.files | ConvertTo-HashTable
@@ -99,7 +96,7 @@ function Install-Package {
 	if (!(Test-Path $GistPath)) { md $GistPath | Out-Null }	
 	
 	# $psFileName = Split-Path -Leaf $rawUrl
-	$dirName = $swid.name
+	$dirName = $swid.name -replace ' ','_'
 	$targetDir = "$($GistPath)\$($dirName)"
 	if (!(Test-Path $targetDir)) { md $targetDir | Out-Null }
 	
@@ -107,7 +104,6 @@ function Install-Package {
 	$gist = (Invoke-RestMethod $rawUrl)
 	$files = ($gist.files | ConvertTo-HashTable)
 	foreach ($filename in $files.Keys) {
-		#$url = Split-Path -Leaf $file.raw_url
 		$file = $files.$($filename)
 		$targetOut = "$($targetDir)\$($filename)"
 		$file.content | Set-Content -Encoding Ascii $targetOut
