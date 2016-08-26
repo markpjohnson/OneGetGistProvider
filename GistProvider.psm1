@@ -32,7 +32,7 @@ function Resolve-PackageSource {
     	write-debug "In $($ProviderName)- Resolve-PackageSources gist: {0}" $Location
     	
     	New-PackageSource $Name $Location $IsTrusted $IsRegistered $IsValidated
-    }        
+    }
 }
 
 function Find-Package { 
@@ -86,7 +86,7 @@ function Find-Package {
 function Install-Package { 
     param(
         [string] $fastPackageReference
-    )   	
+    )
     
     $swid = ($fastPackageReference | ConvertFrom-Json)
     $rawUrl = $swid.fastpackagereference
@@ -100,6 +100,8 @@ function Install-Package {
 	$targetDir = "$($GistPath)\$($dirName)"
 	if (!(Test-Path $targetDir)) { md $targetDir | Out-Null }
 	
+	$swid.fullPath = $targetDir
+	
 	write-verbose "Package install location {0}" $targetDir
 	$gist = (Invoke-RestMethod $rawUrl)
 	$files = ($gist.files | ConvertTo-HashTable)
@@ -111,6 +113,29 @@ function Install-Package {
 	
 	## Update the catalog of gists installed	
 	$swid | Export-Csv -Path $CSVFilename -Append -NoTypeInformation -Encoding ASCII -Force
+}
+
+function Uninstall-Package {
+    param(
+        [string] $fastPackageReference
+    )
+
+	$swid = $fastPackageReference | ConvertFrom-Json
+	
+	$csv = Import-Csv $CSVFilename
+	$csv | where { $_.fastPackageReference -eq $swid.fastPackageReference } | ForEach-Object { Remove-Package -FullPath $_.fullPath }
+	$csv | where { $_.fastPackageReference -ne $swid.fastPackageReference } | Export-Csv -Path $CSVFilename -NoTypeInformation -Encoding ASCII -Force
+}
+
+function Remove-Package {
+	param(
+		[string] $FullPath
+	)
+	
+	Remove-Item "$FullPath" -Recurse
+	if (-not (Test-Path "$FullPath\*")) {
+		Remove-Item $FullPath
+	}
 }
 
 function ConvertTo-HashTable {
