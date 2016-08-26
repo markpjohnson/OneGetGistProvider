@@ -100,8 +100,6 @@ function Install-Package {
 	$targetDir = "$($GistPath)\$($dirName)"
 	if (!(Test-Path $targetDir)) { md $targetDir | Out-Null }
 	
-	$swid.fullPath = $targetDir
-	
 	write-verbose "Package install location {0}" $targetDir
 	$gist = (Invoke-RestMethod $rawUrl)
 	$files = ($gist.files | ConvertTo-HashTable)
@@ -111,7 +109,7 @@ function Install-Package {
 		$file.content | Set-Content -Encoding Ascii $targetOut
 	}
 	
-	## Update the catalog of gists installed	
+	## Update the catalog of gists installed
 	$swid | Export-Csv -Path $CSVFilename -Append -NoTypeInformation -Encoding ASCII -Force
 }
 
@@ -123,7 +121,12 @@ function Uninstall-Package {
 	$swid = $fastPackageReference | ConvertFrom-Json
 	
 	$csv = Import-Csv $CSVFilename
-	$csv | where { $_.fastPackageReference -eq $swid.fastPackageReference } | ForEach-Object { Remove-Package -FullPath $_.fullPath }
+	$csv | where { $_.fastPackageReference -eq $swid.fastPackageReference } | ForEach-Object { 
+		$dirName = $_.name -replace ' ','_'
+		$targetDir = "$($GistPath)\$($dirName)"
+		rmdir $targetDir -Force -Recurse 
+	}
+	
 	$csv | where { $_.fastPackageReference -ne $swid.fastPackageReference } | Export-Csv -Path $CSVFilename -NoTypeInformation -Encoding ASCII -Force
 }
 
