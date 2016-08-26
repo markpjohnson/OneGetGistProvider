@@ -118,7 +118,7 @@ function Uninstall-Package {
         [string] $fastPackageReference
     )
 
-	$swid = $fastPackageReference | ConvertFrom-Json
+    $swid = $fastPackageReference | ConvertFrom-Json
 	
 	$csv = Import-Csv $CSVFilename
 	$csv | where { $_.fastPackageReference -eq $swid.fastPackageReference } | ForEach-Object { 
@@ -164,14 +164,15 @@ function ConvertTo-HashTable {
 function Get-InstalledPackage {
     param()
 
-    if(Test-Path $CSVFilename) {
-        $installedPackages = Import-Csv $CSVFilename
-        
-        write-debug "In $($ProviderName) - Get-InstalledPackage {0}" @($installedPackages).Count   
-        
-        foreach ($item in ($installedPackages | ConvertTo-HashTable))
-        {    
-            New-SoftwareIdentity @item
+    if (Test-Path $CSVFilename) {
+		$installedPackages = Import-Csv $CSVFilename
+		
+		write-debug "In $($ProviderName) - Get-InstalledPackage {0}" @($installedPackages).Count   
+		
+		foreach ($item in ($installedPackages | ConvertTo-HashTable)) {
+			$swid = $item
+			$swid.fastPackageReference = $swid | ConvertTo-JSON -Compress
+			New-SoftwareIdentity @swid
         }
     }
 }
